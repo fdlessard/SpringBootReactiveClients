@@ -7,9 +7,11 @@ import io.fdlessard.codebites.reactive.clients.model.Address;
 import io.fdlessard.codebites.reactive.clients.model.AggregateCustomer;
 import io.fdlessard.codebites.reactive.clients.model.Customer;
 import io.fdlessard.codebites.reactive.clients.model.Product;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class AggregateCustomerServiceImpl implements AggregateCustomerService {
 
@@ -31,29 +33,23 @@ public class AggregateCustomerServiceImpl implements AggregateCustomerService {
 
     public Mono<AggregateCustomer> getAggregateCustomerById(long id) {
 
-        Mono<Customer> customerMono = customerGateway.getCustomerById(id);
-        Mono<Address> addressMono = addressGateway.getAddressById(id);
-        Mono<Product> productMono = productGateway.getProductById(id);
+        log.info("AggregateCustomerServiceImpl.getAggregateCustomerById({})", id);
 
-
-        customerMono.then(addressGateway.getAddressById())
-
-        return Mono.zip(customerMono, addressMono)
-                .map(t -> buildAggregateCustomer(t.getT1(), t.getT2()));
-
-
-                // https://stackoverflow.com/questions/48172582/is-it-possible-to-start-monos-in-parallel-and-aggregate-the-result
-//        return Mono.just(AggregateCustomer.builder().build());
+        return customerGateway.getCustomerById(id).flatMap(
+                customer -> addressGateway.getAddressById(customer.getAddressId()).flatMap(
+                        address -> productGateway.getProductById(customer.getProductId()).flatMap(
+                                product -> Mono.just(buildAggregateCustomer(customer, address, product)))));
     }
 
     private AggregateCustomer buildAggregateCustomer(Customer customer, Address address, Product product) {
+
         return AggregateCustomer.builder()
                 .id(customer.getId())
-                .firstName(customer.getFirstName())
                 .lastName(customer.getLastName())
+                .firstName(customer.getFirstName())
                 .company(customer.getCompany())
+                .product(product)
                 .address(address)
                 .build();
     }
-
 }

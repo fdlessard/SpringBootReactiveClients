@@ -1,12 +1,14 @@
 package io.fdlessard.codebites.reactive.clients.gateways;
 
 import io.fdlessard.codebites.reactive.clients.model.Address;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
+@Slf4j
 @Service
 public class AddressGatewayImpl implements AddressGateway {
 
@@ -17,6 +19,8 @@ public class AddressGatewayImpl implements AddressGateway {
     }
 
     public Mono<Address> getAddressById(long id) {
+
+        log.info("AddressGatewayImpl.getAddressById({})", id);
 
         return addressWebClient.get()
                 .uri("/{id}", id)
